@@ -1,0 +1,6 @@
+
+ultralytics
+opencv-python
+gradio
+torch
+lap>=0.5.12
