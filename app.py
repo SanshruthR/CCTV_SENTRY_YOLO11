@@ -1,4 +1,4 @@
-
+import multiprocessing
 import cv2
 import gradio as gr
 import numpy as np
@@ -7,6 +7,8 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 import logging
 import math
+import time
+from collections import deque
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -16,6 +18,11 @@ logger = logging.getLogger(__name__)
 start_point = None
 end_point = None
 line_params = None  # Stores (slope, intercept) of the line
+
+# Maximize CPU usage
+cpu_cores = multiprocessing.cpu_count()
+cv2.setNumThreads(cpu_cores)
+logger.info(f"OpenCV using {cv2.getNumThreads()} threads out of {cpu_cores} available cores")
 
 def extract_first_frame(stream_url):
     """
@@ -163,7 +170,7 @@ def draw_angled_line(image, line_params, color=(0, 255, 0), thickness=2):
     _, _, start_point, end_point = line_params
     cv2.line(image, start_point, end_point, color, thickness)
 
-def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=None):
+def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=None, target_fps=30):
     """
     Processes the IP camera stream to count objects of the selected classes crossing the line.
     """
@@ -187,73 +194,90 @@ def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=No
         errors.append("Error: Could not open stream.")
         return None, "\n".join(errors)
 
-    model = YOLO(model="yolo11n.pt")
+    model = YOLO(model="yolov8n.pt")
     crossed_objects = {}
     max_tracked_objects = 1000  # Maximum number of objects to track before clearing
 
+    # Queue to hold frames for processing
+    frame_queue = deque(maxlen=10)
+
     logger.info("Starting to process the stream...")
+    last_time = time.time()
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             errors.append("Error: Could not read frame from the stream.")
             break
 
-        # Perform object tracking with confidence threshold
-        results = model.track(frame, persist=True, conf=confidence_threshold)
+        # Add frame to the queue
+        frame_queue.append(frame)
 
-        if results[0].boxes.id is not None:
-            track_ids = results[0].boxes.id.int().cpu().tolist()
-            clss = results[0].boxes.cls.cpu().tolist()
-            boxes = results[0].boxes.xyxy.cpu()
-            confs = results[0].boxes.conf.cpu().tolist()
+        # Process frames in the queue
+        if len(frame_queue) > 0:
+            process_frame = frame_queue.popleft()
 
-            for box, cls, t_id, conf in zip(boxes, clss, track_ids, confs):
-                if conf >= confidence_threshold and model.names[cls] in selected_classes:
-                    # Check if the object crosses the line
-                    if is_object_crossing_line(box, line_params) and t_id not in crossed_objects:
-                        crossed_objects[t_id] = True
+            # Perform object tracking with confidence threshold
+            results = model.track(process_frame, persist=True, conf=confidence_threshold)
 
-                        # Clear the dictionary if it gets too large
-                        if len(crossed_objects) > max_tracked_objects:
-                            crossed_objects.clear()
+            if results[0].boxes.id is not None:
+                track_ids = results[0].boxes.id.int().cpu().tolist()
+                clss = results[0].boxes.cls.cpu().tolist()
+                boxes = results[0].boxes.xyxy.cpu()
+                confs = results[0].boxes.conf.cpu().tolist()
 
-        # Visualize the results with bounding boxes, masks, and IDs
-        annotated_frame = results[0].plot()
+                for box, cls, t_id, conf in zip(boxes, clss, track_ids, confs):
+                    if conf >= confidence_threshold and model.names[cls] in selected_classes:
+                        # Check if the object crosses the line
+                        if is_object_crossing_line(box, line_params) and t_id not in crossed_objects:
+                            crossed_objects[t_id] = True
 
-        # Draw the angled line on the frame
-        draw_angled_line(annotated_frame, line_params, color=(0, 255, 0), thickness=2)
+                            # Clear the dictionary if it gets too large
+                            if len(crossed_objects) > max_tracked_objects:
+                                crossed_objects.clear()
 
-        # Display the count on the frame with a modern look
-        count = len(crossed_objects)
-        (text_width, text_height), _ = cv2.getTextSize(f"COUNT: {count}", cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+            # Visualize the results with bounding boxes, masks, and IDs
+            annotated_frame = results[0].plot()
 
-        # Calculate the position for the middle of the top
-        margin = 10  # Margin from the top
-        x = (annotated_frame.shape[1] - text_width) // 2  # Center-align the text horizontally
-        y = text_height + margin  # Top-align the text
+            # Draw the angled line on the frame
+            draw_angled_line(annotated_frame, line_params, color=(0, 255, 0), thickness=2)
 
-        # Draw the black background rectangle
-        cv2.rectangle(annotated_frame, (x - margin, y - text_height - margin), (x + text_width + margin, y + margin), (0, 0, 0), -1)
+            # Display the count on the frame with a modern look
+            count = len(crossed_objects)
+            (text_width, text_height), _ = cv2.getTextSize(f"COUNT: {count}", cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
 
-        # Draw the text
-        cv2.putText(annotated_frame, f"COUNT: {count}", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            # Calculate the position for the middle of the top
+            margin = 10  # Margin from the top
+            x = (annotated_frame.shape[1] - text_width) // 2  # Center-align the text horizontally
+            y = text_height + margin  # Top-align the text
 
-        # Yield the annotated frame to Gradio
-        yield annotated_frame, ""
+            # Draw the black background rectangle
+            cv2.rectangle(annotated_frame, (x - margin, y - text_height - margin), (x + text_width + margin, y + margin), (0, 0, 0), -1)
+
+            # Draw the text
+            cv2.putText(annotated_frame, f"COUNT: {count}", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            # Yield the annotated frame to Gradio
+            yield annotated_frame, ""
+
+        # Calculate the time taken to process the frame
+        current_time = time.time()
+        elapsed_time = current_time - last_time
+        last_time = current_time
+
+        # Calculate the time to sleep to maintain the target FPS
+        sleep_time = max(0, (1.0 / target_fps) - elapsed_time)
+        time.sleep(sleep_time)
 
     cap.release()
     logger.info("Stream processing completed.")
 
 # Define the Gradio interface
 with gr.Blocks() as demo:
-    gr.Markdown("<center><h1><u>Fast Real-time Object Detection & Tracking with High-Res Output</u></h1></center>")
-    gr.Markdown("<center><h2> <u>Detect and count objects crossing a line with Yolo11n </u></h2></center>")
+    gr.Markdown("<h1>Real-time monitoring, object tracking, and line-crossing detection for CCTV camera streams.</h1></center>")
+    gr.Markdown("## https://github.com/SanshruthR/CCTV_SENTRY_YOLO11")
     
-   
-   
     # Step 1: Enter the IP Camera Stream URL
-    # gr.Markdown("### Step 0: Enter the IP Camera Stream URL")
-    stream_url = gr.Textbox(label="Enter IP Camera Stream URL", value="https://s86.ipcamlive.com/streams/56bajygtsxwuzdmte/stream.m3u8", visible=False)
+    stream_url = gr.Textbox(label="Enter IP Camera Stream URL", value="https://s104.ipcamlive.com/streams/68idokwtondsqpmkr/stream.m3u8", visible=False)
 
     # Step 1: Extract the first frame from the stream
     gr.Markdown("### Step 1: Click on the frame to draw a line, the objects crossing it would be counted in real-time.")
@@ -264,18 +288,12 @@ with gr.Blocks() as demo:
         # Image component for displaying the first frame
         image = gr.Image(value=first_frame, label="First Frame of Stream", type="pil")
 
-      
         line_info = gr.Textbox(label="Line Coordinates", value="Line Coordinates:\nStart: None, End: None")
         image.select(update_line, inputs=image, outputs=[image, line_info])
 
-        # Reset the line (optional)
-        # gr.Markdown("### Step 4: Reset the Line (Optional)")
-        # reset_button = gr.Button("Reset Line")
-        # reset_button.click(reset_line, inputs=None, outputs=[image, line_info])
-
         # Step 2: Select classes to detect
         gr.Markdown("### Step 2: Select Classes to Detect")
-        model = YOLO(model="yolo11n.pt")  # Load the model to get class names
+        model = YOLO(model="yolov8n.pt")  # Load the model to get class names
         class_names = list(model.names.values())  # Get class names
         selected_classes = gr.CheckboxGroup(choices=class_names, label="Select Classes to Detect")
 
@@ -283,7 +301,11 @@ with gr.Blocks() as demo:
         gr.Markdown("### Step 3: Adjust Confidence Threshold (Optional)")
         confidence_threshold = gr.Slider(minimum=0.0, maximum=1.0, value=0.2, label="Confidence Threshold")
 
-        #process the stream
+        # Step 4: Set target FPS
+        gr.Markdown("### Step 4: Set Target FPS (Optional)")
+        target_fps = gr.Slider(minimum=1, maximum=120*4, value=60, label="Target FPS")
+
+        # Process the stream
         process_button = gr.Button("Process Stream")
 
         # Output image for real-time frame rendering
@@ -293,7 +315,7 @@ with gr.Blocks() as demo:
         error_box = gr.Textbox(label="Errors/Warnings", interactive=False)
 
         # Event listener for processing the video
-        process_button.click(process_video, inputs=[confidence_threshold, selected_classes, stream_url], outputs=[output_image, error_box])
+        process_button.click(process_video, inputs=[confidence_threshold, selected_classes, stream_url, target_fps], outputs=[output_image, error_box])
 
 # Launch the interface
 demo.launch(debug=True)
