@@ -277,7 +277,10 @@ with gr.Blocks() as demo:
     gr.Markdown("## https://github.com/SanshruthR/CCTV_SENTRY_YOLO11")
     
     # Step 1: Enter the IP Camera Stream URL
-    stream_url = gr.Textbox(label="Enter IP Camera Stream URL", value="https://s104.ipcamlive.com/streams/68idokwtondsqpmkr/stream.m3u8", visible=False)
+    # ip="https://view.h264.cam/ref/kta/live.primary.m3u8"
+    ip="https://edge01.london.nginx.hdontap.com/hosb1/cobblestone_ttv.stream/chunklist_w1477066012.m3u8"
+    stream_url = gr.Textbox(label="Enter IP Camera Stream URL", value=ip, visible=False)
+    
 
     # Step 1: Extract the first frame from the stream
     gr.Markdown("### Step 1: Click on the frame to draw a line, the objects crossing it would be counted in real-time.")
