@@ -1,4 +1,4 @@
-# CCTV_SENTRY_YOLO11
+# CCTV_SENTRY_YOLO12
 
 ![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLOv11-FF6200?style=for-the-badge&logo=ultralytics&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
@@ -13,7 +13,7 @@
 
 
 ## Overview
-CCTV_SENTRY_YOLO11 is an advanced object detection system built using YOLOv11 by Ultralytics. It provides real-time monitoring, object tracking, and line-crossing detection for IP camera streams. Hosted on Hugging Face Spaces, it enables users to easily interact with the model via a web interface.
+CCTV_SENTRY_YOLO12 is an advanced object detection system built using YOLOv11 by Ultralytics. It provides real-time monitoring, object tracking, and line-crossing detection for IP camera streams. Hosted on Hugging Face Spaces, it enables users to easily interact with the model via a web interface.
 
 ## Features
 - **Line-Crossing Detection**: Detects objects crossing user-defined lines.
@@ -80,12 +80,12 @@ The system leverages the YOLOv11 model from Ultralytics for accurate and efficie
 ### Run Locally
 1. Clone the repository:
    ```bash
-   git clone https://github.com/SanshruthR/CCTV_SENTRY_YOLO11.git
+   git clone https://github.com/SanshruthR/CCTV_SENTRY_YOLO12.git
    
    ```
 2. Navigate to the project directory:
    ```bash
-   cd CCTV_SENTRY_YOLO11
+   cd CCTV_SENTRY_YOLO12
    pip install -r requirements.txt
    ```
 3. Start the application:
@@ -95,7 +95,7 @@ The system leverages the YOLOv11 model from Ultralytics for accurate and efficie
 
 ### Live Demo
 Experience the project live on Hugging Face Spaces:  
-[CCTV_SENTRY_YOLO11 on Hugging Face](https://huggingface.co/spaces/Sanshruth/CCTV_SENTRY_YOLO11)
+[CCTV_SENTRY_YOLO12 on Hugging Face](https://huggingface.co/spaces/Sanshruth/CCTV_SENTRY_YOLO12)
 
 ## Deployment
 * To create a live HLS stream for testing, refer to this GitHub repository:  
