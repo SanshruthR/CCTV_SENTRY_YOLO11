@@ -1,6 +1,6 @@
 # CCTV_SENTRY_YOLO12
 
-![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLOv11-FF6200?style=for-the-badge&logo=ultralytics&logoColor=white)
+![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLOv12-FF6200?style=for-the-badge&logo=ultralytics&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
 ![Gradio](https://img.shields.io/badge/Gradio-Web%20UI-0DAB76?style=for-the-badge&logo=gradio&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.8-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -13,11 +13,11 @@
 
 
 ## Overview
-CCTV_SENTRY_YOLO12 is an advanced object detection system built using YOLOv11 by Ultralytics. It provides real-time monitoring, object tracking, and line-crossing detection for IP camera streams. Hosted on Hugging Face Spaces, it enables users to easily interact with the model via a web interface.
+CCTV_SENTRY_YOLO12 is an advanced object detection system built using YOLOv12 by Ultralytics. It provides real-time monitoring, object tracking, and line-crossing detection for IP camera streams. Hosted on Hugging Face Spaces, it enables users to easily interact with the model via a web interface.
 
 ## Features
 - **Line-Crossing Detection**: Detects objects crossing user-defined lines.
-- **Real-Time Object Detection**: Utilizes YOLOv11 for high-speed object tracking.
+- **Real-Time Object Detection**: Utilizes YOLOv12 for high-speed object tracking.
 - **Interactive Interface**: Powered by Gradio for an intuitive user experience.
 - **Customizable Classes**: Filter objects based on specific detection classes.
 - **Detailed Visualization**: Annotated frames with bounding boxes, IDs, and counts.
@@ -28,7 +28,7 @@ https://github.com/user-attachments/assets/e29ad9df-b810-4308-b6a8-4ff81019edea
 
 
 ## Model Details
-The system leverages the YOLOv11 model from Ultralytics for accurate and efficient object detection. Key technologies include:
+The system leverages the YOLOv12 model from Ultralytics for accurate and efficient object detection. Key technologies include:
 - **OpenCV**: For video frame processing.
 - **Gradio**: For creating an interactive user interface.
 - **Ultralytics YOLO**: For state-of-the-art object detection and tracking.
