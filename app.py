@@ -170,7 +170,7 @@ def draw_angled_line(image, line_params, color=(0, 255, 0), thickness=2):
     _, _, start_point, end_point = line_params
     cv2.line(image, start_point, end_point, color, thickness)
 
-def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=None, target_fps=30):
+def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=None, target_fps=30, model_name="yolov8n.pt"):
     """
     Processes the IP camera stream to count objects of the selected classes crossing the line.
     """
@@ -194,7 +194,7 @@ def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=No
         errors.append("Error: Could not open stream.")
         return None, "\n".join(errors)
 
-    model = YOLO(model="yolo12n.pt")
+    model = YOLO(model=model_name)
     crossed_objects = {}
     max_tracked_objects = 1000  # Maximum number of objects to track before clearing
 
@@ -295,7 +295,7 @@ with gr.Blocks() as demo:
 
         # Step 2: Select classes to detect
         gr.Markdown("### Step 2: Select Classes to Detect")
-        model = YOLO(model="yolo12n.pt")  # Load the model to get class names
+        model = YOLO(model="yolov8n.pt")  # Load the model to get class names
         class_names = list(model.names.values())  # Get class names
         selected_classes = gr.CheckboxGroup(choices=class_names, label="Select Classes to Detect")
 
@@ -307,6 +307,10 @@ with gr.Blocks() as demo:
         gr.Markdown("### Step 4: Set Target FPS (Optional)")
         target_fps = gr.Slider(minimum=1, maximum=120*4, value=60, label="Target FPS")
 
+        # Step 5: Select YOLO model
+        gr.Markdown("### Step 5: Select YOLO Model")
+        model_name = gr.Dropdown(choices=["yolov8n.pt", "yolo11n.pt","yolo12n.pt"], label="Select YOLO Model", value="yolov8n.pt")
+
         # Process the stream
         process_button = gr.Button("Process Stream")
 
@@ -317,7 +321,7 @@ with gr.Blocks() as demo:
         error_box = gr.Textbox(label="Errors/Warnings", interactive=False)
 
         # Event listener for processing the video
-        process_button.click(process_video, inputs=[confidence_threshold, selected_classes, stream_url, target_fps], outputs=[output_image, error_box])
+        process_button.click(process_video, inputs=[confidence_threshold, selected_classes, stream_url, target_fps, model_name], outputs=[output_image, error_box])
 
 # Launch the interface
-demo.launch(debug=True) 
+demo.launch(debug=True)
