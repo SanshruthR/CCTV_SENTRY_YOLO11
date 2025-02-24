@@ -194,7 +194,7 @@ def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=No
         errors.append("Error: Could not open stream.")
         return None, "\n".join(errors)
 
-    model = YOLO(model="yolov8n.pt")
+    model = YOLO(model="yolo12n.pt")
     crossed_objects = {}
     max_tracked_objects = 1000  # Maximum number of objects to track before clearing
 
@@ -274,11 +274,10 @@ def process_video(confidence_threshold=0.5, selected_classes=None, stream_url=No
 # Define the Gradio interface
 with gr.Blocks() as demo:
     gr.Markdown("<h1>Real-time monitoring, object tracking, and line-crossing detection for CCTV camera streams.</h1></center>")
-    gr.Markdown("## https://github.com/SanshruthR/CCTV_SENTRY_YOLO11")
+    gr.Markdown("## https://github.com/SanshruthR/CCTV_SENTRY_YOLO12")
     
     # Step 1: Enter the IP Camera Stream URL
-    # ip="https://view.h264.cam/ref/kta/live.primary.m3u8"
-    ip="https://edge01.london.nginx.hdontap.com/hosb1/cobblestone_ttv.stream/chunklist_w1477066012.m3u8"
+    ip="https://59d39900ebfb8.streamlock.net/Channels301/default.stream/chunklist_w1780413149.m3u8"
     stream_url = gr.Textbox(label="Enter IP Camera Stream URL", value=ip, visible=False)
     
 
@@ -296,7 +295,7 @@ with gr.Blocks() as demo:
 
         # Step 2: Select classes to detect
         gr.Markdown("### Step 2: Select Classes to Detect")
-        model = YOLO(model="yolov8n.pt")  # Load the model to get class names
+        model = YOLO(model="yolo12n.pt")  # Load the model to get class names
         class_names = list(model.names.values())  # Get class names
         selected_classes = gr.CheckboxGroup(choices=class_names, label="Select Classes to Detect")
 
@@ -321,4 +320,4 @@ with gr.Blocks() as demo:
         process_button.click(process_video, inputs=[confidence_threshold, selected_classes, stream_url, target_fps], outputs=[output_image, error_box])
 
 # Launch the interface
-demo.launch(debug=True)
+demo.launch(debug=True) 
